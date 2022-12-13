@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "AudioProcessor.hpp"
-#include "DspUtils.hpp"
+#include "Utils.hpp"
 
 namespace mbdsp
 {

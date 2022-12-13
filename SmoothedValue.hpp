@@ -5,7 +5,8 @@
 
 #include <cmath>
 
-#include "DspUtils.hpp"
+#include "Utils.hpp"
+
 namespace mbdsp
 {
 

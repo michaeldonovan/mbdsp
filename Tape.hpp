@@ -6,9 +6,10 @@
 #include "CHOWTape/HysteresisProcessing.h"
 
 #include "AudioProcessor.hpp"
-#include "DspUtils.hpp"
 #include "EnvelopeFollower.hpp"
 #include "Oversampler.hpp"
+#include "Utils.hpp"
+
 namespace mbdsp
 {
 template <class T = float>
