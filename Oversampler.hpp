@@ -4,7 +4,6 @@
 #include <functional>
 
 #include "hiir/Downsampler2xFpu.h"
-#include "hiir/PolyPHaseIir2Designer.h"
 #include "hiir/Upsampler2xFpu.h"
 
 #include "AudioProcessor.hpp"
@@ -12,28 +11,29 @@
 namespace mbdsp
 {
 
+// coefficients from hiir examples in oversampling.txt
+static constexpr size_t N_COEFFS_2X = 12;
+static const double COEFFS_2X[N_COEFFS_2X] = {
+    0.017347915108876406, 0.067150480426919179, 0.14330738338179819, 0.23745131944299824,
+    0.34085550201503761,  0.44601111310335906,  0.54753112652956148, 0.6423859124721446,
+    0.72968928615804163,  0.81029959388029904,  0.88644514917318362, 0.96150605146543733};
+
 template <class T = float>
 class Oversampler
 {
 public:
     using sample_type = T;
 
-    static constexpr auto N_COEFFS_2X = 12;
-    static constexpr auto N_COEFFS_4X = 6;
     void Init()
     {
-        double coeffs2x[N_COEFFS_2X];
-        double coeffs4x[N_COEFFS_4X];
-        hiir::PolyphaseIir2Designer::compute_coefs_spec_order_tbw(coeffs2x, N_COEFFS_2X, 0.01);
-        hiir::PolyphaseIir2Designer::compute_coefs_spec_order_tbw(coeffs4x, N_COEFFS_4X, 0.01);
-        upsampler_2x.set_coefs(coeffs2x);
+        upsampler_2x.set_coefs(COEFFS_2X);
         upsampler_2x.clear_buffers();
-        downsampler_2x.set_coefs(coeffs2x);
+        downsampler_2x.set_coefs(COEFFS_2X);
         downsampler_2x.clear_buffers();
-        upsampler_4x.set_coefs(coeffs4x);
-        upsampler_4x.clear_buffers();
-        downsampler_4x.set_coefs(coeffs4x);
-        downsampler_4x.clear_buffers();
+        // upsampler_4x.set_coefs(coeffs4x);
+        // upsampler_4x.clear_buffers();
+        // downsampler_4x.set_coefs(coeffs4x);
+        // downsampler_4x.clear_buffers();
     }
 
     sample_type Process(sample_type in, std::function<sample_type(sample_type)> proc)
@@ -64,12 +64,10 @@ public:
     }
 
 private:
-    // coefficients from hiir examples in oversampling.txt
-
     hiir::Upsampler2xFpu<N_COEFFS_2X> upsampler_2x;
     hiir::Downsampler2xFpu<N_COEFFS_2X> downsampler_2x;
-    hiir::Upsampler2xFpu<N_COEFFS_4X> upsampler_4x;
-    hiir::Downsampler2xFpu<N_COEFFS_4X> downsampler_4x;
+    // hiir::Upsampler2xFpu<N_COEFFS_4X> upsampler_4x;
+    // hiir::Downsampler2xFpu<N_COEFFS_4X> downsampler_4x;
 };
 
 }  // namespace mbdsp

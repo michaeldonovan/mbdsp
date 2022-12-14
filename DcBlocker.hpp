@@ -30,7 +30,7 @@ public:
     void Init(float sample_rate, float freq_hz = 20.f)
     {
         fs_ = sample_rate;
-        R_ = 1 - (pi() * 2 * freq_hz / fs_);
+        R_ = 1 - (PI * 2 * freq_hz / fs_);
     }
 
     inline sample_type Process(sample_type in) override

@@ -18,7 +18,7 @@ public:
 
     void Init(value_type sample_rate, value_type smooth_time_ms = 100, value_type initial_val = 0)
     {
-        a_ = std::exp(-mbdsp::twopi() / (smooth_time_ms * 0.001 * sample_rate));
+        a_ = std::exp(-TWOPI / (smooth_time_ms * 0.001 * sample_rate));
         b_ = 1.0 - a_;
         curr_ = initial_val;
         SetTarget(initial_val);

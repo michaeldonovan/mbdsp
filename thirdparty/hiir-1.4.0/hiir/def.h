@@ -45,7 +45,6 @@ namespace hiir
 #define hiir_ARCHI hiir_ARCHI_OTHER
 #endif
 
-#define hiir_FORCEINLINE inline
 // Inlining
 #if defined(_MSC_VER)
 #define hiir_FORCEINLINE __forceinline

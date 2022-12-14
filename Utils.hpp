@@ -3,13 +3,11 @@
 
 #include <cmath>
 
-#include <daisysp.h>
-
 namespace mbdsp
 {
 
-constexpr double pi() { return std::atan(1) * 4; }
-constexpr double twopi() { return pi() * 2; }
+static const double PI = std::atan(1) * 4;
+static const double TWOPI = PI * 2;
 
 constexpr auto MS_PER_SEC = 1000;
 constexpr auto SEC_PER_MIN = 60;

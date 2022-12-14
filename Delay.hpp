@@ -1,33 +1,30 @@
 #ifndef DELAY_HPP
 #define DELAY_HPP
 
-#include <daisysp.h>
-
 #include "AudioProcessor.hpp"
+#include "DelayLine.hpp"
 #include "EnvelopeFollower.hpp"
 #include "SmoothedValue.hpp"
 
 namespace mbdsp
 {
 
-template <size_t max_size, class Sample_t = float>
-class Delay : public mbdsp::AudioProcessor<Sample_t>
+template <class T = float>
+class Delay : public mbdsp::AudioProcessor<T>
 {
 public:
-    using sample_type = Sample_t;
+    using sample_type = T;
 
-    void Init(float sample_rate, float time_smooth_ms)
+    void Init(float sample_rate, size_t max_delay, float time_smooth_ms)
     {
         fs_ = sample_rate;
-        delay_.Init();
-        timeVal_.Init(sample_rate, time_smooth_ms);
+        delay_.Init(max_delay);
+        time_smoothed_.Init(sample_rate, time_smooth_ms);
     }
 
     sample_type Process(sample_type in) override
     {
-        delay_.SetDelay(timeVal_.Process());
-
-        auto read = delay_.Read();
+        const auto read = delay_.Read(time_smoothed_.Process());
         float write = feedback_ * read;
         if(inputEnable_) { write += in; }
 
@@ -42,21 +39,24 @@ public:
 
     inline void EnableInput(bool enable) { inputEnable_ = enable; }
 
-    inline void SetTime(float time) { timeVal_.SetTarget(mbdsp::clamp<float>(time, 0, max_size)); }
+    inline void SetTime(float time)
+    {
+        time_smoothed_.SetTarget(mbdsp::clamp<float>(time, 0, delay_.MaxDelay()));
+    }
 
-    inline float GetTime() { return timeVal_.GetCurrent(); }
+    inline float GetTime() { return time_smoothed_.GetCurrent(); }
 
     inline void Reset() { delay_.Reset(); }
 
     inline void SetFeedbackProcessor(AudioProcessor<sample_type>* proc) { proc_ = proc; }
 
 private:
+    DelayLine<sample_type> delay_;
+    SmoothedValue<float> time_smoothed_;
     float fs_;
-    mbdsp::SmoothedValue<float> timeVal_;
     float feedback_ = 0;
     bool inputEnable_ = true;
     AudioProcessor<sample_type>* proc_;
-    daisysp::DelayLine<float, max_size> delay_;
 };
 
 }  // namespace mbdsp

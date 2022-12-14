@@ -6,28 +6,25 @@
 
 namespace mbdsp
 {
-template <class NowFn_t>
+template <class T>
 class TapTempo
 {
 public:
-    using TimeVal_t = decltype(std::declval<NowFn_t>()());
-    static_assert(std::is_arithmetic<TimeVal_t>::value, "NowFn_t must return an arithmetic type");
+    using time_type = T;
+    static_assert(std::is_arithmetic<time_type>::value, "T must be an arithmetic type");
 
     /**
-     * @param now_fn: A function that will return the current time
      * @param max_duration: The maximum time between taps that will be
      * considered
      */
-    void Init(NowFn_t now_fn, TimeVal_t max_duration)
+    void Init(time_type max_duration)
     {
-        now_fn_ = now_fn;
         max_dur_ = max_duration;
         Reset();
     }
 
-    TimeVal_t Tap()
+    time_type Tap(time_type now)
     {
-        auto now = now_fn_();
         if(last_ == 0)
         {
             last_ = now;
@@ -52,11 +49,11 @@ public:
         }
     }
 
-    TimeVal_t GetBeatLength() const
+    time_type GetBeatLength() const
     {
         // calculate mean of taps
-        TimeVal_t accum = 0;
-        TimeVal_t num_durs = 0;
+        time_type accum = 0;
+        time_type num_durs = 0;
         for(const auto& dur : durations_)
         {
             if(dur <= 0) { continue; }
@@ -64,7 +61,8 @@ public:
             accum += dur;
             num_durs++;
         }
-        return accum / num_durs;
+        if(num_durs) { return accum / num_durs; }
+        return 0;
     }
 
     void Reset()
@@ -75,17 +73,16 @@ public:
     }
 
 private:
-    inline void write(TimeVal_t duration)
+    inline void write(time_type duration)
     {
         durations_[write_ptr_] = duration;
         write_ptr_ = (write_ptr_ + 1) % durations_.size();
     }
 
-    NowFn_t now_fn_;
-    TimeVal_t last_ = 0;
-    std::array<TimeVal_t, 4> durations_;
+    time_type last_ = 0;
+    std::array<time_type, 4> durations_;
     size_t write_ptr_ = 0;
-    TimeVal_t max_dur_;
+    time_type max_dur_;
 };
 }  // namespace mbdsp
 

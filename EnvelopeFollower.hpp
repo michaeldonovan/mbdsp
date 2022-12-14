@@ -5,8 +5,6 @@
 #ifndef EnvFollower_h
 #define EnvFollower_h
 
-#include <daisysp.h>
-
 #include <cmath>
 #include <vector>
 
@@ -112,12 +110,12 @@ public:
 
     inline void SetAttack(float attack_ms)
     {
-        this->attack_ = daisysp::fastpower(0.01, 1.0 / (attack_ms * this->fs_ * 0.001));
+        this->attack_ = mbdsp::powf_approx(0.01, 1.0 / (attack_ms * this->fs_ * 0.001));
     }
 
     inline void SetRelease(float release_ms)
     {
-        this->release_ = daisysp::fastpower(0.01, 1.0 / (release_ms * this->fs_ * 0.001));
+        this->release_ = mbdsp::powf_approx(0.01, 1.0 / (release_ms * this->fs_ * 0.001));
     }
 
     inline void SetHold(float hold_ms) { this->hold_ = hold_ms / 1000. * this->fs_; }
