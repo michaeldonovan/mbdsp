@@ -63,6 +63,8 @@ public:
         return Process(in, [proc, in](sample_type samp) { return proc->Process(samp); });
     }
 
+    auto GetOsFactor() const { return 2; }
+
 private:
     hiir::Upsampler2xFpu<N_COEFFS_2X> upsampler_2x;
     hiir::Downsampler2xFpu<N_COEFFS_2X> downsampler_2x;
