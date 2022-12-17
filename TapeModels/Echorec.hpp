@@ -2,13 +2,20 @@
 #define ECHOREC_HPP
 
 #include "IRs/IR_Echorec_Lofi.hpp"
-#include "TapeAttrs.hpp"
+#include "TapeModel.hpp"
 
-class Echorec : public TapeAttrs
+namespace mbdsp
+{
+
+namespace TapeModels
+{
+
+class Echorec : public TapeModel
 {
 public:
     Echorec()
     {
+        using namespace detail;
         float speed = 7.5;
 
         ir = IR_ECHOREC_LOFI;
@@ -19,5 +26,9 @@ public:
         gain_comp_db = -18;
     }
 };
+
+}  // namespace TapeModels
+
+}  // namespace mbdsp
 
 #endif  // ECHOREC_HPP

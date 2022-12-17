@@ -2,6 +2,13 @@
 #ifndef IR_SPACEECHO_HPP
 #define IR_SPACEECHO_HPP
 
+namespace mbdsp
+{
+namespace TapeModels
+{
+namespace detail
+{
+
 const float IR_SPACEECHO[150] = {
     -0.0000027069939, -0.00047982414, 0.0015841718,   0.03511859,     0.1848476,
     0.52365094,       0.9120319,      0.988,          0.59964496,     0.09780341,
@@ -33,5 +40,9 @@ const float IR_SPACEECHO[150] = {
     -0.0016085992,    -0.0014743481,  -0.0013605371,  -0.0012385406,  -0.00112286,
     -0.0009997642,    -0.0008789802,  -0.00077383127, -0.0006641765,  -0.00056036335,
     -0.00046730283,   -0.00037734822, -0.0002680063,  -0.00016184282, -0.00006845042};
+
+}
+}  // namespace TapeModels
+}  // namespace mbdsp
 
 #endif  // IR_SPACEECHO_HPP

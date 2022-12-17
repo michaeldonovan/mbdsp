@@ -2,20 +2,29 @@
 #define SPACEECHO_HPP
 
 #include "IRs/IR_SpaceEcho.hpp"
-#include "TapeAttrs.hpp"
+#include "TapeModel.hpp"
 
-class SpaceEcho : public TapeAttrs
+namespace mbdsp
+{
+namespace TapeModels
+{
+
+class SpaceEcho : public TapeModel
 {
 public:
     SpaceEcho()
     {
-        speed = 7.5;
+        using namespace detail;
 
+        speed = 7.5;
         ir = IR_SPACEECHO;
         ir_size = sizeof(IR_SPACEECHO) / sizeof(IR_SPACEECHO[0]);
         lp_min = 200;
         gain_comp_db = -16;
     }
 };
+
+}  // namespace TapeModels
+}  // namespace mbdsp
 
 #endif  // SPACEECHO_HPP

@@ -1,10 +1,14 @@
-#ifndef TAPEATTRS_HPP
-#define TAPEATTRS_HPP
+#ifndef TapeModel_HPP
+#define TapeModel_HPP
 
 #include <cstddef>
+
 #include "Utils.hpp"
 
-class TapeAttrs
+namespace mbdsp
+{
+
+class TapeModel
 {
 public:
     float speed = 15;
@@ -24,6 +28,10 @@ public:
     float lp_max = 20000;
 
     float gain_comp_db = -4;
+
+    auto operator<=>(const TapeModel&) const = default;
 };
 
-#endif  // TAPEATTRS_HPP
+}  // namespace mbdsp
+
+#endif  // TapeModel_HPP
