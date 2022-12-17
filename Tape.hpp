@@ -12,9 +12,9 @@
 #include "Oversampler.hpp"
 #include "Utils.hpp"
 
-#include "TapeModel.hpp"
 #include "TapeModels/Echorec.hpp"
 #include "TapeModels/SpaceEcho.hpp"
+#include "TapeModels/TapeModel.hpp"
 
 namespace mbdsp
 {
@@ -26,17 +26,11 @@ public:
 
     void Init(float sample_rate)
     {
-        os_rate_ = sample_rate * 2;
+        os_.Init();
+        os_rate_ = sample_rate * os_.GetOsFactor();
         hyst_.setSampleRate(os_rate_);
         hyst_.cook(.5, .5, .5, false);
         hyst_.reset();
-        os_.Init();
-        // comp_.Init(sampleRate);
-        // comp_.SetAttack(0.003); // 3ms
-        // comp_.SetRelease(0.15); // 150ms
-        // comp_.SetRatio(1.1);
-        // comp_.SetThreshold(-45);
-        // comp_.AutoMakeup(true);
         comp_.Init(3, 150, 0, 1.1, 3, os_rate_);
         comp_.SetMode(Compressor<sample_type>::CompMode::COMP);
         comp_.SetThreshold(-45);
