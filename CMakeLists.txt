@@ -14,14 +14,14 @@ if (BUILD_TESTING AND ${CMAKE_PROJECT_NAME} STREQUAL mbdsp)
     FetchContent_Declare(
         Catch2
         GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-        GIT_TAG        v3.2.1 
+        GIT_TAG        v3.2.0 
     )
 
     FetchContent_MakeAvailable(Catch2)
 
     add_executable(mbdsp_tests tests/tests.cpp)
 
-    set_property(TARGET mbdsp_tests PROPERTY CXX_STANDARD 17)
+    set_property(TARGET mbdsp_tests PROPERTY CXX_STANDARD 20)
     set_property(TARGET mbdsp_tests PROPERTY CXX_STANDARD_REQUIRED On)
     set_property(TARGET mbdsp_tests PROPERTY CXX_EXTENSIONS Off)
 
