@@ -16,6 +16,8 @@
 #include "TapeModels/SpaceEcho.hpp"
 #include "TapeModels/TapeModel.hpp"
 
+#include "DcBlocker.hpp"
+
 namespace mbdsp
 {
 template <class T = float>
@@ -39,6 +41,7 @@ public:
         lp_.SetRes(0);
         hp_.Init(sample_rate);
         hp_.SetRes(0);
+        dc_blocker_.Init(sample_rate, 35.f);
         SetModel(0);
     }
 
@@ -58,9 +61,11 @@ public:
             return sample;
         });
 
+        sample = dc_blocker_.Process(sample);
+
         // Loss
         lp_.Process(sample);
-        // sample = lp_.Low();
+        sample = lp_.Low();
         hp_.Process(sample);
         sample = hp_.High();
 
@@ -111,6 +116,7 @@ private:
     daisysp::Svf lp_;
     daisysp::Svf hp_;
     daisysp::FIRFilterImplGeneric<512, 4> fir_;
+    DcBlocker<sample_type> dc_blocker_;
     std::shared_ptr<const TapeModel> model_;
     float post_gain_;
     float pre_gain_;

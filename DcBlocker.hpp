@@ -11,7 +11,7 @@
 #define DCBLOCKER_HPP
 
 #include "AudioProcessor.hpp"
-#include "DspUtils.hpp"
+#include "Utils.hpp"
 
 namespace mbdsp
 {
@@ -21,16 +21,10 @@ class DcBlocker : public AudioProcessor<T>
 public:
     using sample_type = T;
 
-    DcBlocker(const DcBlocker&) = delete;
-    DcBlocker operator=(const DcBlocker&) = delete;
-    DcBlocker(DcBlocker&&) = default;
-    DcBlocker operator=(DcBlocker&&) = default;
-    ~DcBlocker() = default;
-
-    void Init(float sample_rate, float freq_hz = 20.f)
+    void Init(sample_type sample_rate, sample_type freq_hz = 20.f)
     {
         fs_ = sample_rate;
-        R_ = 1 - (PI * 2 * freq_hz / fs_);
+        R_ = 1.f - (PI * 2.f * freq_hz / fs_);
     }
 
     inline sample_type Process(sample_type in) override
@@ -42,8 +36,8 @@ public:
     }
 
 private:
-    float fs_;
-    float R_;
+    sample_type fs_;
+    sample_type R_;
     sample_type last_in_ = 0;
     sample_type last_out_ = 0;
 };
