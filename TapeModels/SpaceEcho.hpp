@@ -19,7 +19,7 @@ public:
         speed = 7.5;
         ir = IR_SPACEECHO;
         ir_size = sizeof(IR_SPACEECHO) / sizeof(IR_SPACEECHO[0]);
-        lp_min = 200;
+        lp_min = 2000;
         gain_comp_db = -16;
     }
 };
