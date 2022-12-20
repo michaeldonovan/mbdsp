@@ -10,6 +10,7 @@
 #ifndef DCBLOCKER_HPP
 #define DCBLOCKER_HPP
 
+#include <numbers>
 #include "AudioProcessor.hpp"
 #include "Utils.hpp"
 
@@ -24,7 +25,7 @@ public:
     void Init(sample_type sample_rate, sample_type freq_hz = 20.f)
     {
         fs_ = sample_rate;
-        R_ = 1.f - (PI * 2.f * freq_hz / fs_);
+        R_ = 1.f - (std::numbers::pi * 2.f * freq_hz / fs_);
     }
 
     inline sample_type Process(sample_type in) override

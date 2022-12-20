@@ -3,8 +3,7 @@
  * https://www.musicdsp.org/en/latest/Filters/257-1-pole-lpf-for-smooth-parameter-changes.html?highlight=smooth
  */
 
-#include <cmath>
-
+#include <numbers>
 #include "Utils.hpp"
 
 namespace mbdsp
@@ -18,7 +17,7 @@ public:
 
     void Init(value_type sample_rate, value_type smooth_time_ms = 100, value_type initial_val = 0)
     {
-        a_ = std::exp(-TWOPI / (smooth_time_ms * 0.001 * sample_rate));
+        a_ = std::exp(-2 * std::numbers::pi / (smooth_time_ms * 0.001 * sample_rate));
         b_ = 1.0 - a_;
         curr_ = initial_val;
         SetTarget(initial_val);

@@ -39,8 +39,8 @@ public:
     sample_type Process(sample_type in, std::function<sample_type(sample_type)> proc)
     {
         sample_type upBuff2x[2];
-        sample_type upBuff4x[4];
-        sample_type downBuff4x[4];
+        // sample_type upBuff4x[4];
+        // sample_type downBuff4x[4];
         sample_type downBuff2x[2];
 
         upsampler_2x.process_sample(upBuff2x[0], upBuff2x[1], in);
