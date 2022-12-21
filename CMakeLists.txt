@@ -25,12 +25,20 @@ if (BUILD_TESTING AND ${CMAKE_PROJECT_NAME} STREQUAL mbdsp)
         GIT_TAG        v3.2.0 
     )
 
-    FetchContent_MakeAvailable(Catch2)
+
+    FetchContent_Declare(
+        DaisySP
+        GIT_REPOSITORY https://github.com/electro-smith/DaisySP
+    )
+
+    FetchContent_MakeAvailable(Catch2 DaisySP)
+    target_compile_definitions(DaisySP PUBLIC -D_USE_MATH_DEFINES=1)
 
     add_executable(mbdsp_tests tests/tests.cpp)
 
     target_link_libraries(mbdsp_tests PRIVATE Catch2::Catch2WithMain)
-    target_link_libraries(mbdsp_tests PRIVATE mbdsp)
+    target_link_libraries(mbdsp_tests PRIVATE mbdsp DaisySP)
+
 
     include(CTest)
     include(Catch)
