@@ -27,7 +27,7 @@ public:
     float lp_min = 1000;
     float lp_max = 20000;
 
-    float gain_comp_db = -4;
+    float gain_comp_db = 0;
 
     auto operator<=>(const TapeModel&) const = default;
 };
