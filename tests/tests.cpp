@@ -30,7 +30,7 @@ TEST_CASE("TapTempo rejects taps over max length", "[taptempo]")
 
 TEST_CASE("Oversampler calls processor correct number of times", "[oversampler]")
 {
-    Oversampler os;
+    Oversampler<float> os;
     os.Init();
     size_t n_calls = 0;
     const auto processor = [&n_calls](float in) {
