@@ -14,7 +14,7 @@
         in
         {
           packages = with pkgs;{
-            pkg = pkgs.stdenv.mkDerivation {
+            mbdsp = pkgs.stdenv.mkDerivation {
               pname = "mbdsp";
               version = "0.1.0";
               src = ./.;
@@ -33,7 +33,7 @@
             };
           };
 
-          defaultPackage = self.packages.${system}.pkg;
+          defaultPackage = self.packages.${system}.mbdsp;
         });
 }
 
