@@ -6,7 +6,7 @@ set(mbdsp_VERSION 0.1.0)
 
 add_library(mbdsp INTERFACE)
 
-set(SRC_DIR ${CMAKE_CURRENT_LIST_DIR})
+set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/mbdsp)
 
 target_include_directories(mbdsp INTERFACE 
                             $<BUILD_INTERFACE:${SRC_DIR}>
@@ -17,7 +17,15 @@ target_include_directories(mbdsp INTERFACE
 
 target_compile_features(mbdsp INTERFACE cxx_std_20)
 
+# Install headers
+install(DIRECTORY ${SRC_DIR}
+        DESTINATION include
+)
+
 install(TARGETS mbdsp EXPORT mbdspTargets
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
     INCLUDES DESTINATION include
 )
 
