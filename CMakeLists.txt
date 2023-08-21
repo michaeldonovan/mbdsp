@@ -7,7 +7,7 @@ add_library(mbdsp INTERFACE)
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/mbdsp)
 
 target_include_directories(mbdsp INTERFACE 
-                            $<BUILD_INTERFACE:${SRC_DIR}>
+                            $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>
                             $<BUILD_INTERFACE:${SRC_DIR}/thirdparty>
                             $<BUILD_INTERFACE:${SRC_DIR}/thirdparty/hiir-1.4.0>
                             $<INSTALL_INTERFACE:include>
