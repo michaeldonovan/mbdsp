@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 3.15)
 
 project(mbdsp LANGUAGES CXX)
 
-set(mbdsp_VERSION 0.1.0)
-
 add_library(mbdsp INTERFACE)
 
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/mbdsp)
@@ -32,13 +30,6 @@ install(TARGETS mbdsp EXPORT mbdspTargets
 # Include the helper CMake script that generates the *Config.cmake file.
 include(CMakePackageConfigHelpers)
 
-# Create the mbdspConfigVersion.cmake file
-write_basic_package_version_file(
-    ${CMAKE_CURRENT_BINARY_DIR}/mbdspConfigVersion.cmake
-    VERSION ${mbdsp_VERSION}
-    COMPATIBILITY SameMajorVersion
-)
-
 export(EXPORT mbdspTargets
   FILE "${CMAKE_CURRENT_BINARY_DIR}/mbdsp/mbdspTargets.cmake"
   NAMESPACE mbdsp::
@@ -58,9 +49,8 @@ install(EXPORT mbdspTargets
     DESTINATION ${ConfigPackageLocation}
 )
 
-# Install the configuration and version files.
+# Install the configuration file.
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/mbdspConfig.cmake
-              ${CMAKE_CURRENT_BINARY_DIR}/mbdspConfigVersion.cmake
         DESTINATION ${ConfigPackageLocation}
 )
 
