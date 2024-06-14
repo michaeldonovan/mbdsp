@@ -12,7 +12,7 @@ constexpr auto SEC_PER_MIN = 60;
 template <typename T>
 inline constexpr T samples_to_ms(T samples, T sample_rate)
 {
-    return samples / (sample_rate * 1000);
+    return samples / (sample_rate * static_cast<T>(MS_PER_SEC));
 }
 
 template <typename T>
@@ -25,9 +25,9 @@ inline constexpr T samples_to_sec(T samples, T sample_rate)
  * From https://openaudio.blogspot.com/2017/02/faster-log10-and-pow.html
  */
 template <class Float_t>
-inline Float_t fast_pow10(Float_t x)
+constexpr Float_t fast_pow10(Float_t x)
 {
-    return std::exp(2.302585092994046 * x);
+    return std::exp(static_cast<Float_t>(2.302585092994046) * x);
 }
 
 /**
@@ -54,21 +54,21 @@ inline Float_t log2_approx(Float_t x)
  * From https://openaudio.blogspot.com/2017/02/faster-log10-and-pow.html
  */
 template <class Float_t>
-inline Float_t log10_approx(Float_t x)
+constexpr Float_t log10_approx(Float_t x)
 {
-    return log2_approx(x) * 0.3010299956639812;
+    return log2_approx(x) * static_cast<Float_t>(0.3010299956639812);
 }
 
 template <class Float_t>
-inline Float_t amp_to_db(Float_t amp)
+constexpr Float_t amp_to_db(Float_t amp)
 {
-    return log10_approx(amp) * 20.f;
+    return log10_approx(amp) * static_cast<Float_t>(20);
 }
 
 template <class Float_t>
-inline Float_t db_to_amp(Float_t db)
+constexpr Float_t db_to_amp(Float_t db)
 {
-    return fast_pow10(db / 20.f);
+    return fast_pow10(db / static_cast<Float_t>(20));
 }
 
 /**
