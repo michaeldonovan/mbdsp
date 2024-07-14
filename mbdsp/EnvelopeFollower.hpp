@@ -37,7 +37,7 @@ public:
         env_ = 0;
         timer_ = 0;
         rms_window_len_ = sample_rate * 0.2;
-        buffer_.resize(rms_window_len_);
+        // if(detect_mode == RMS) { buffer_.reserve(rms_window_len_); }
         index_ = 0;
     }
 
@@ -45,7 +45,7 @@ public:
     {
         float mag;
         if(mode_ == EnvMode::RMS) {}
-        else { mag = std::abs(sample); }
+        else { mag = std::fabs(sample); }
         if(mag > env_)
         {
             env_ = attack_ * (env_ - mag) + mag;
@@ -95,7 +95,7 @@ public:
     };
 
     void Init(float attack_ms, float release_ms, float hold_ms, float ratio, float knee,
-              float sample_rate)
+              float sample_rate, bool makeup = true)
     {
         EnvFollower<T>::Init(EnvFollower<T>::EnvMode::PEAK, attack_ms, release_ms, hold_ms,
                              sample_rate);
@@ -104,6 +104,8 @@ public:
         knee_ = knee;
         ratio_ = ratio;
         threshold_ = 0.;
+        makeup_ = makeup;
+        gain_ = 0;
         CalcKnee();
         CalcSlope();
     }
@@ -118,7 +120,7 @@ public:
         this->release_ = mbdsp::powf_approx(0.01, 1.0 / (release_ms * this->fs_ * 0.001));
     }
 
-    inline void SetHold(float hold_ms) { this->hold_ = hold_ms / 1000. * this->fs_; }
+    inline void SetHold(float hold_ms) { this->hold_ = hold_ms * this->fs_ * 0.001; }
 
     inline void SetKnee(float knee)
     {
@@ -132,6 +134,7 @@ public:
         ratio_ = ratio;
         CalcKnee();
         CalcSlope();
+        CalcMakeup();
     }
 
     inline void SetThreshold(float thresholdDB)
@@ -139,6 +142,7 @@ public:
         threshold_ = thresholdDB;
         CalcKnee();
         CalcSlope();
+        CalcMakeup();
     }
 
     inline void SetMode(CompMode mode)
@@ -167,7 +171,7 @@ public:
             gain_reduction_ = std::min(0.f, gain_reduction_);
         }
 
-        return sample * mbdsp::db_to_amp(gain_reduction_);
+        return sample * mbdsp::db_to_amp(gain_reduction_ + gain_);
     }
 
     // Takes in two samples, processes them, and returns gain reduction in dB
@@ -199,7 +203,9 @@ protected:
     float knee_lower_bound_;
     float knee_upper_bound_;
     float slope_;
+    float gain_;
     CompMode comp_mode_;
+    bool makeup_;
 
     inline void CalcKnee()
     {
@@ -212,6 +218,11 @@ protected:
     {
         if(comp_mode_ == CompMode::COMP) { slope_ = 1 - (1 / ratio_); }
         else if(comp_mode_ == CompMode::LIMIT) { slope_ = 1; }
+    }
+
+    inline void CalcMakeup()
+    {
+        if(makeup_) { gain_ = std::fabs(threshold_ - threshold_ / ratio_) * 0.1; }
     }
 };
 

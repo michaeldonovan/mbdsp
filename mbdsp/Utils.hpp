@@ -2,6 +2,7 @@
 #define DSPUTILS_HPP
 
 #include <cmath>
+#include <concepts>
 
 namespace mbdsp
 {

@@ -1,0 +1,10 @@
+{
+   "clangd.arguments": [
+    "--background-index",
+    "--pretty",
+    "--compile-commands-dir=${workspaceFolder}/build",
+    "--clang-tidy",
+    "--header-insertion=iwyu",
+    "-j=4"
+ ],
+}

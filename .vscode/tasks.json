@@ -1,0 +1,34 @@
+{
+    "tasks": [
+        {
+            "command": "cmake --build build -j",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "label": "build",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "type": "shell"
+        },
+        {
+            "command": "cmake . -Bbuild -DBUILD_TESTING=1 -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Debug",
+            "label": "configure",
+            "group": {
+                "kind": "build"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "type": "shell"
+        }
+    ],
+    "version": "2.0.0"
+}

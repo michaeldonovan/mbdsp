@@ -60,7 +60,7 @@ if (BUILD_TESTING AND ${CMAKE_PROJECT_NAME} STREQUAL mbdsp)
     FetchContent_Declare(
         Catch2
         GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-        GIT_TAG        v3.2.0 
+        GIT_TAG        v3.6.0 
     )
 
 
@@ -72,7 +72,8 @@ if (BUILD_TESTING AND ${CMAKE_PROJECT_NAME} STREQUAL mbdsp)
     FetchContent_MakeAvailable(Catch2 DaisySP)
     target_compile_definitions(DaisySP PUBLIC -D_USE_MATH_DEFINES=1)
 
-    add_executable(mbdsp_tests tests/tests.cpp)
+    add_executable(mbdsp_tests tests/tests.cpp
+                               tests/TestParameter.cpp)
 
     target_link_libraries(mbdsp_tests PRIVATE Catch2::Catch2WithMain)
     target_link_libraries(mbdsp_tests PRIVATE mbdsp DaisySP)

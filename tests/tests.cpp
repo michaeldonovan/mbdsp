@@ -1,8 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include "DelayLine.hpp"
-#include "Oversampler.hpp"
-#include "TapTempo.hpp"
+#include "mbdsp/DelayLine.hpp"
+#include "mbdsp/Oversampler.hpp"
+#include "mbdsp/TapTempo.hpp"
 
 using namespace mbdsp;
 
