@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include "../Concepts.hpp"
 
 namespace mbdsp
@@ -9,26 +10,132 @@ namespace concepts
 {
 
 template <typename T, typename V>
-concept control_input = requires(T t) {
+concept range = requires(T t, V val) {
+    { t.min_v } -> std::same_as<V>;
+    { t.max_v } -> std::same_as<V>;
+};
+
+template <typename T, typename V>
+concept processor = requires(T t) {
     { t.Process() } -> std::convertible_to<V>;
 };
 
 }  // namespace concepts
 
+namespace Remap
+{
+
+template <concepts::numeric V>
+struct Linear
+{
+    using value_type = V;
+
+    constexpr value_type operator()(value_type val, value_type min, value_type max)
+    {
+        return clamp(min + val * (max - min), min, max);
+    }
+};
+
+template <concepts::numeric V>
+struct Exponential
+{
+    using value_type = V;
+
+    constexpr value_type operator()(value_type val, value_type min, value_type max,
+                                    value_type exponent = 2)
+    {
+        return Linear<V>{}(std::pow(val, exp), min, max);
+    }
+};
+
+template <concepts::numeric V>
+struct Logarithmic
+{
+    using value_type = V;
+
+    constexpr value_type operator()(value_type val, value_type min, value_type max)
+    {
+        V logmin = std::log(std::max(min, V{0.0000001}));
+        V logmax = std::log(max);
+        auto v = std::exp(Linear<V>{}(val, logmin, logmax));
+        return clamp(v, min, max);
+    }
+};
+
+}  // namespace Remap
+
 template <concepts::numeric V>
 struct Control
 {
-    Control() : func([]() { return V{}; }) {}
-    Control(concepts::invocable<float> auto input) { func = std::move(input); }
+    Control() : input_([]() { return V{}; }) {}
+    Control(concepts::invocable<V> auto input) { input_ = std::move(input); }
 
-    Control(concepts::control_input<float> auto input)
-        : Control([&input]() { return input.Process(); })
+    Control(concepts::processor<V> auto* input) : Control([input]() { return input->Process(); }) {}
+
+    Control<V>& Init(concepts::invocable<V> auto input)
     {
+        input_ = input;
+        return *this;
     }
 
-    V operator()() { return func(); }
+    Control<V>& Init(concepts::processor<V> auto* input)
+    {
+        input_ = [input]() {
+            return input->Process();
+        };
+        return *this;
+    }
 
-    std::function<V()> func;
+    Control<V>& Scale(V coeff)
+    {
+        functors_.push_back([coeff](V val) { return val * coeff; });
+        return *this;
+    }
+
+    Control<V>& Offset(V offset)
+    {
+        functors_.push_back([offset](V val) { return val + offset; });
+        return *this;
+    }
+
+    Control<V>& Invert()
+    {
+        functors_.push_back([](V val) { return val * V{-1}; });
+        return *this;
+    }
+
+    template <class mapping = Remap::Linear<V>>
+    Control<V>& Remap(V min, V max)
+    {
+        functors_.push_back([min, max](V&& val) { return mapping{}(val, min, max); });
+        return *this;
+    }
+
+    Control<V>& Clamp(V min, V max)
+    {
+        functors_.push_back([min, max](V&& val) { return clamp(val, min, max); });
+        return *this;
+    }
+
+    Control<V>& Add(std::convertible_to<Control<V>> auto&& control)
+    {
+        functors_.push_back([ctrl = std::forward<decltype(control)>(control)](V&& val) {
+            return val + Control<V>{ctrl}();
+        });
+        return *this;
+    }
+
+    V operator()()
+    {
+        // return std::accumulate(functors_.begin(), functors_.end(), input_(),
+        //                        [](V val, auto&& func) { return func(val); });
+        return std::ranges::fold_left(functors_, input_(),
+                                      [](V val, auto&& func) { return func(val); });
+    }
+
+protected:
+    std::function<V()> input_;
+    std::vector<std::function<V(V)>> functors_;
 };
 
 template <concepts::numeric V, concepts::invocable<V> C>
