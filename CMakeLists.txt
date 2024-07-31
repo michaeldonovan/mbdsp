@@ -9,6 +9,7 @@ set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/mbdsp)
 target_include_directories(mbdsp INTERFACE 
                             $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>
                             $<BUILD_INTERFACE:${SRC_DIR}/thirdparty>
+                            $<BUILD_INTERFACE:${SRC_DIR}/thirdparty/gcem/include>
                             $<BUILD_INTERFACE:${SRC_DIR}/thirdparty/hiir-1.4.0>
                             $<INSTALL_INTERFACE:include>
                         )
@@ -72,8 +73,10 @@ if (BUILD_TESTING AND ${CMAKE_PROJECT_NAME} STREQUAL mbdsp)
     FetchContent_MakeAvailable(Catch2 DaisySP)
     target_compile_definitions(DaisySP PUBLIC -D_USE_MATH_DEFINES=1)
 
-    add_executable(mbdsp_tests tests/tests.cpp
-                               tests/TestParameter.cpp)
+
+    add_executable(mbdsp_tests tests/tests.cpp)
+
+    target_compile_features(mbdsp_tests PUBLIC cxx_std_20)
 
     target_link_libraries(mbdsp_tests PRIVATE Catch2::Catch2WithMain)
     target_link_libraries(mbdsp_tests PRIVATE mbdsp DaisySP)

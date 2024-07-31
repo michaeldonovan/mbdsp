@@ -1,10 +1,13 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
 
+#include "mbdsp/Controls/Controls.hpp"
 #include "mbdsp/DelayLine.hpp"
 #include "mbdsp/Oversampler.hpp"
 #include "mbdsp/TapTempo.hpp"
 
 using namespace mbdsp;
+using Catch::Matchers::WithinRel;
 
 TEST_CASE("TapTempo returns correct beat length", "[taptempo]")
 {
@@ -70,4 +73,84 @@ TEST_CASE("Delay line interpolates between samples", "[delayline]")
     const auto read = dl.Read(1.5);
     REQUIRE(read > 1);
     REQUIRE(read < 2);
+}
+
+TEST_CASE("RemapExp", "[controls]")
+{
+    auto val = 0.f;
+    auto input = [&val]() {
+        return val;
+    };
+
+    auto ctrl = Control<float>(input).Remap<Remap::Exponential<float, 2.f>>(0, 100);
+    for(val = 0; val < 1; val += .1f) { REQUIRE(ctrl() == val * val * 100); }
+}
+
+TEST_CASE("PitchControl", "[controls]")
+{
+    float v_oct;
+    float f_base = 440.f;
+    auto v_oct_fn = [&v_oct]() {
+        return v_oct;
+    };
+    auto coarse = []() {
+        return 0.f;
+    };
+
+    constexpr float v_max = 10.f;
+
+    auto ctrl = PitchControl<float>(v_oct_fn, coarse, f_base, f_base);
+
+    // a4
+    v_oct = 0 / v_max;
+    REQUIRE(ctrl() == 440);
+
+    // a5
+    v_oct = 1 / v_max;
+    REQUIRE(ctrl() == 880);
+
+    // a6
+    v_oct = 2 / v_max;
+    REQUIRE(ctrl() == 1760);
+
+    // a7
+    v_oct = 3 / v_max;
+    REQUIRE(ctrl() == 3520);
+}
+
+TEST_CASE("PitchControlFine", "[controls]")
+{
+    float v_oct;
+    float f_base = 440.f;
+    auto v_oct_fn = [&v_oct] {
+        return v_oct;
+    };
+    auto coarse = [] {
+        return 0.f;
+    };
+
+    float fine;
+    auto fine_fn = [&fine] {
+        return fine;
+    };
+
+    constexpr float v_max = 10.f;
+    constexpr float fine_semis = 12.f;
+
+    auto ctrl = PitchControl<float, fine_semis>(v_oct_fn, coarse, f_base, f_base, fine_fn, v_max);
+
+    // Bb4x
+    v_oct = 0 / v_max;
+    fine = 1 / fine_semis;
+    REQUIRE_THAT(ctrl(), WithinRel(466.1638f, .01f));
+
+    // c6
+    v_oct = 1 / v_max;
+    fine = 2 / fine_semis;
+    REQUIRE_THAT(ctrl(), WithinRel(1046.502f, .01f));
+
+    // a7
+    v_oct = 2 / v_max;
+    fine = 12 / fine_semis;
+    REQUIRE_THAT(ctrl(), WithinRel(3520.f, .01f));
 }

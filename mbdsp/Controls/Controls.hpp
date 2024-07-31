@@ -1,7 +1,12 @@
 #pragma once
 
-#include <algorithm>
+#include <cmath>
+#include <concepts>
+#include <functional>
+#include <numeric>
+#include <gcem.hpp>
 #include "../Concepts.hpp"
+#include "../Utils.hpp"
 
 namespace mbdsp
 {
@@ -32,19 +37,18 @@ struct Linear
 
     constexpr value_type operator()(value_type val, value_type min, value_type max)
     {
-        return clamp(min + val * (max - min), min, max);
+        return clamp<V>(min + val * (max - min), min, max);
     }
 };
 
-template <concepts::numeric V>
+template <concepts::numeric V, V exponent = 2.f>
 struct Exponential
 {
     using value_type = V;
 
-    constexpr value_type operator()(value_type val, value_type min, value_type max,
-                                    value_type exponent = 2)
+    constexpr value_type operator()(value_type val, value_type min, value_type max)
     {
-        return Linear<V>{}(std::pow(val, exp), min, max);
+        return Linear<V>{}(std::pow(val, exponent), min, max);
     }
 };
 
@@ -58,7 +62,7 @@ struct Logarithmic
         V logmin = std::log(std::max(min, V{0.0000001}));
         V logmax = std::log(max);
         auto v = std::exp(Linear<V>{}(val, logmin, logmax));
-        return clamp(v, min, max);
+        return clamp<V>(v, min, max);
     }
 };
 
@@ -92,6 +96,18 @@ struct Control
         return *this;
     }
 
+    Control<V>& Exp(V base)
+    {
+        functors_.push_back([base](V val) { return std::pow(base, val); });
+        return *this;
+    }
+
+    Control<V>& Pow(V power)
+    {
+        functors_.push_back([power](V val) { return std::pow(val, power); });
+        return *this;
+    }
+
     Control<V>& Offset(V offset)
     {
         functors_.push_back([offset](V val) { return val + offset; });
@@ -119,18 +135,22 @@ struct Control
 
     Control<V>& Add(std::convertible_to<Control<V>> auto&& control)
     {
-        functors_.push_back([ctrl = std::forward<decltype(control)>(control)](V&& val) {
-            return val + Control<V>{ctrl}();
-        });
+        auto ctrl = Control<V>{std::forward<decltype(control)>(control)};
+        functors_.push_back([ctrl = std::move(ctrl)](V&& val) mutable { return val + ctrl(); });
+        return *this;
+    }
+
+    Control<V>& Multiply(std::convertible_to<Control<V>> auto&& control)
+    {
+        auto ctrl = Control<V>{std::forward<decltype(control)>(control)};
+        functors_.push_back([ctrl = std::move(ctrl)](V&& val) mutable { return val * ctrl(); });
         return *this;
     }
 
     V operator()()
     {
-        // return std::accumulate(functors_.begin(), functors_.end(), input_(),
-        //                        [](V val, auto&& func) { return func(val); });
-        return std::ranges::fold_left(functors_, input_(),
-                                      [](V val, auto&& func) { return func(val); });
+        return std::accumulate(functors_.begin(), functors_.end(), input_(),
+                               [](V val, auto&& func) { return func(val); });
     }
 
 protected:
@@ -138,68 +158,42 @@ protected:
     std::vector<std::function<V(V)>> functors_;
 };
 
-template <concepts::numeric V, concepts::invocable<V> C>
-Control<V> Scale(C&& ctrl, V coeff)
+template <concepts::numeric V, V fine_semitones = 12.f>
+Control<V> PitchControl(std::convertible_to<Control<V>> auto&& v_oct,
+                        std::convertible_to<Control<V>> auto&& coarse, V coarse_min, V coarse_max,
+                        std::convertible_to<Control<V>> auto&& fine, V max_voltage = 5.f)
 {
-    return [coeff, control = std::move(ctrl)]() {
-        return control() * coeff;
-    };
+    constexpr auto semitone_coeff = gcem::pow(2.f, 1.f / 12.f);
+
+    using Remap::Exponential;
+
+    auto v_oct_ctrl =
+        Control<V>{std::forward<decltype(v_oct)>(v_oct)}.Remap(0, max_voltage).Exp(2.f);
+
+    auto coarse_ctrl =
+        Control<V>{std::forward<decltype(coarse)>(coarse)}.template Remap<Exponential<V, 2.f>>(
+            coarse_min, coarse_max);
+
+    auto fine_ctrl = Control<V>{std::forward<decltype(fine)>(fine)}.Exp(semitone_coeff);
+
+    return coarse_ctrl.Multiply(std::move(v_oct_ctrl)).Multiply(std::move(fine_ctrl));
 }
 
-template <concepts::numeric V, concepts::invocable<V> C>
-Control<V> ScaleDb(C&& ctrl, V db)
+template <concepts::numeric V>
+Control<V> PitchControl(std::convertible_to<Control<V>> auto&& v_oct,
+                        std::convertible_to<Control<V>> auto&& coarse, V coarse_min, V coarse_max,
+                        V max_voltage = 5.f)
 {
-    return [db, control = std::move(ctrl)]() {
-        return control() * db_to_amp(db);
-    };
+    using Remap::Exponential;
+
+    auto v_oct_ctrl =
+        Control<V>{std::forward<decltype(v_oct)>(v_oct)}.Remap(0, max_voltage).Exp(2.f);
+
+    auto coarse_ctrl =
+        Control<V>{std::forward<decltype(coarse)>(coarse)}.template Remap<Exponential<V, 2.f>>(
+            coarse_min, coarse_max);
+
+    return coarse_ctrl.Multiply(std::move(v_oct_ctrl));
 }
-
-template <concepts::numeric V, concepts::invocable<V> C>
-Control<V> Invert(C&& ctrl)
-{
-    return [control = std::move(ctrl)]() {
-        return control() * -1;
-    };
-}
-
-template <concepts::numeric V, concepts::invocable<V> C>
-Control<V> Offset(C&& ctrl, V offset)
-{
-    return [offset, control = std::move(ctrl)]() {
-        return control() + offset;
-    };
-}
-
-// template <concepts::numeric V>
-// struct ControlWrapper : public Control
-// {
-//     ControlWrapper(Control&& control) : ctrl_(std::move(control)) {}
-
-//     V operator()() override { return ctrl_(); }
-
-//     Control ctrl_;
-// };
-
-// template <concepts::numeric V, V coeff>
-// struct Scale : public ControlWrapper<V>
-// {
-//     Scale(Control&& control) : ctrl_(std::move(control)) {}
-
-//     V operator()() override { return coeff * this->ctrl_(); }
-// };
-
-// template <concepts::numeric V, V db>
-// struct ScaleDb : public ControlWrapper<V>
-// {
-//     ScaleDb(Control&& control) : ctrl_(std::move(control)) {}
-//     V operator()() override { return db_to_amp(db) * this->ctrl_(); }
-// };
-
-// template <concepts::numeric V>
-// struct Invert : public ControlWrapper<V>
-// {
-//     Invert(Control&& control) : ctrl_(std::move(control)) {}
-//     V operator()() override { return -1 * this->ctrl_(); }
-// };
 
 }  // namespace mbdsp
