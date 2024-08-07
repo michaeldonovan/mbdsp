@@ -3,12 +3,38 @@
 
 #include <cmath>
 #include <concepts>
+#include <fenv.h>
+#include <gcem.hpp>
 
 namespace mbdsp
 {
 
 constexpr auto MS_PER_SEC = 1000;
 constexpr auto SEC_PER_MIN = 60;
+
+class PreventDenormals
+{
+public:
+    PreventDenormals() : _env_prev(fenv_t{})
+    {
+        if(fegetenv(&*_env_prev) == 0)
+        {
+#ifdef FE_DFL_DISABLE_SSE_DENORMS_ENV
+            fesetenv(FE_DFL_DISABLE_SSE_DENORMS_ENV);
+#elif defined(FE_DFL_DISABLE_DENORMS_ENV)
+            fesetenv(FE_DFL_DISABLE_DENORMS_ENV);
+#endif
+        }
+        else { _env_prev.reset(); }
+    }
+    ~PreventDenormals()
+    {
+        if(_env_prev) fesetenv(&*_env_prev);
+    }
+
+private:
+    std::optional<fenv_t> _env_prev;
+};
 
 template <typename T>
 inline constexpr T samples_to_ms(T samples, T sample_rate)
@@ -28,18 +54,18 @@ inline constexpr T samples_to_sec(T samples, T sample_rate)
 template <class Float_t>
 constexpr Float_t fast_pow10(Float_t x)
 {
-    return std::exp(static_cast<Float_t>(2.302585092994046) * x);
+    return gcem::exp<Float_t>(gcem::log<Float_t>(10.f) * x);
 }
 
 /**
  * From https://openaudio.blogspot.com/2017/02/faster-log10-and-pow.html
  */
 template <class Float_t>
-inline Float_t log2_approx(Float_t x)
+constexpr Float_t log2_approx(Float_t x)
 {
     Float_t Y, F;
     int E;
-    F = std::frexp(std::fabs(x), &E);
+    F = std::frexp(gcem::abs<Float_t>(x), &E);
     Y = 1.23149591368684f;
     Y *= F;
     Y += -4.11852516267426f;
@@ -73,7 +99,7 @@ constexpr Float_t db_to_amp(Float_t db)
 }
 
 /**
- * Fast power approximation.
+ * Fast (but rough) power approximation.
  *
  * Originally Stefan Stenzel, from
  * https://www.musicdsp.org/en/latest/Other/133-fast-power-and-root-estimates-for-32bit-floats.html
@@ -197,11 +223,7 @@ inline constexpr float fastexp(float x)
  * By uh.etle.fni@yfoocs from
  * https://www.musicdsp.org/en/latest/Other/222-fast-exp-approximations.html
  */
-inline constexpr float fastpow2(float x)
-{
-    float const log_two = 0.6931472f;
-    return fastexp(x * log_two);
-}
+inline constexpr float fastpow2(float x) { return fastexp(x * gcem::log(2)); }
 
 template <class Numeric_t>
 inline constexpr Numeric_t clamp(Numeric_t in, Numeric_t min, Numeric_t max)

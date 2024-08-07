@@ -1,3 +1,6 @@
+#include <cmath>
+#include <limits>
+
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
@@ -5,9 +8,59 @@
 #include "mbdsp/DelayLine.hpp"
 #include "mbdsp/Oversampler.hpp"
 #include "mbdsp/TapTempo.hpp"
+#include "mbdsp/Utils.hpp"
 
 using namespace mbdsp;
-using Catch::Matchers::WithinRel;
+using namespace Catch::Matchers;
+
+TEST_CASE("fast_pow2", "[utils]")
+{
+    for(float f = 0; f < 10; f += .1) { REQUIRE_THAT(fastpow2(f), WithinRel(std::pow(2, f), .01)); }
+}
+
+TEST_CASE("fast_pow10", "[utils]")
+{
+    for(float f = 0; f < 10; f += .1)
+    {
+        REQUIRE_THAT(fast_pow10(f), WithinRel(std::pow(10, f), .01));
+    }
+}
+
+TEST_CASE("log2_approx", "[utils]")
+{
+    for(float f = 0; f < 10; f += .1)
+    {
+        REQUIRE_THAT(log2_approx(f), WithinRel(std::log2f(f), .01));
+    }
+}
+
+TEST_CASE("powf_approx", "[utils]")
+{
+    for(float f = 0; f < 10; f += .01)
+    {
+        for(int n = 0; n < 10; n += 1)
+        {
+            REQUIRE_THAT(powf_approx(f, n), WithinRel(std::pow(f, n), .05));
+        }
+    }
+}
+
+TEST_CASE("db_to_amp", "[utils]")
+{
+    for(float db = -48; db < 48; db += .5)
+    {
+        REQUIRE_THAT(db_to_amp(db), WithinRel(std::pow(10.f, db / 20.f), .01));
+    }
+}
+
+TEST_CASE("amp_to_db", "[utils]")
+{
+    // we lose accuracy near zero
+    for(float amp = .015; amp < 10; amp += .1)
+    {
+        REQUIRE_THAT(amp_to_db(amp), WithinRel(std::log10(amp) * 20.f, .05));
+    }
+}
 
 TEST_CASE("TapTempo returns correct beat length", "[taptempo]")
 {
@@ -82,14 +135,13 @@ TEST_CASE("RemapExp", "[controls]")
         return val;
     };
 
-    auto ctrl = Control<float>(input).Remap<Remap::Exponential<float, 2.f>>(0, 100);
-    for(val = 0; val < 1; val += .1f) { REQUIRE(ctrl() == val * val * 100); }
+    auto ctrl = Control<float>(input).Remap<Remap::Exponential<float, 0.f, 100.f, 2.f>>();
+    for(val = 0; val < 1; val += .1f) { REQUIRE_THAT(ctrl(), WithinRel(val * val * 100, .01f)); }
 }
 
 TEST_CASE("PitchControl", "[controls]")
 {
     float v_oct;
-    float f_base = 440.f;
     auto v_oct_fn = [&v_oct]() {
         return v_oct;
     };
@@ -97,9 +149,10 @@ TEST_CASE("PitchControl", "[controls]")
         return 0.f;
     };
 
+    constexpr float f_base = 440.f;
     constexpr float v_max = 10.f;
 
-    auto ctrl = PitchControl<float>(v_oct_fn, coarse, f_base, f_base);
+    auto ctrl = PitchControl<float, f_base, f_base>(v_oct_fn, coarse);
 
     // a4
     v_oct = 0 / v_max;
@@ -121,7 +174,6 @@ TEST_CASE("PitchControl", "[controls]")
 TEST_CASE("PitchControlFine", "[controls]")
 {
     float v_oct;
-    float f_base = 440.f;
     auto v_oct_fn = [&v_oct] {
         return v_oct;
     };
@@ -134,10 +186,11 @@ TEST_CASE("PitchControlFine", "[controls]")
         return fine;
     };
 
+    constexpr float f_base = 440.f;
     constexpr float v_max = 10.f;
     constexpr float fine_semis = 12.f;
 
-    auto ctrl = PitchControl<float, fine_semis>(v_oct_fn, coarse, f_base, f_base, fine_fn, v_max);
+    auto ctrl = PitchControl<float, f_base, f_base, fine_semis, v_max>(v_oct_fn, coarse, fine_fn);
 
     // Bb4x
     v_oct = 0 / v_max;

@@ -1,3 +1,6 @@
 [submodule "mbdsp/thirdparty/gcem"]
 	path = mbdsp/thirdparty/gcem
 	url = git@github.com:kthohr/gcem.git
+[submodule "mbdsp/thirdparty/SG14"]
+	path = mbdsp/thirdparty/SG14
+	url = git@github.com:WG21-SG14/SG14.git
