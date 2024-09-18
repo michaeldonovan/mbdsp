@@ -4,3 +4,9 @@
 [submodule "mbdsp/thirdparty/SG14"]
 	path = mbdsp/thirdparty/SG14
 	url = git@github.com:WG21-SG14/SG14.git
+[submodule "mbdsp/thirdparty/etl"]
+	path = mbdsp/thirdparty/etl
+	url = git@github.com:ETLCPP/etl.git
+[submodule "mbdsp/thirdparty/reflect-cpp"]
+	path = mbdsp/thirdparty/reflect-cpp
+	url = git@github.com:getml/reflect-cpp.git
