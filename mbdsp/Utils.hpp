@@ -37,15 +37,27 @@ private:
 };
 
 template <typename T>
-inline constexpr T samples_to_ms(T samples, T sample_rate)
+constexpr T samples_to_ms(T samples, T sample_rate)
 {
     return samples / (sample_rate * static_cast<T>(MS_PER_SEC));
 }
 
 template <typename T>
-inline constexpr T samples_to_sec(T samples, T sample_rate)
+constexpr T samples_to_sec(T samples, T sample_rate)
 {
     return samples / sample_rate;
+}
+
+template <concepts::numeric V>
+constexpr V semitone_coeff(V semitones)
+{
+    return gcem::pow<V>(2, semitones / 12);
+}
+
+template <concepts::numeric V>
+constexpr V shift_semitones(V freq, V semitones)
+{
+    return freq * semitone_coeff(semitones);
 }
 
 /**
