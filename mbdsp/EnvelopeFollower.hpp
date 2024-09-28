@@ -7,15 +7,14 @@
 
 #include <cmath>
 #include <vector>
-
-#include "AudioProcessor.hpp"
+#include "Concepts.hpp"
 #include "Utils.hpp"
 
 namespace mbdsp
 {
 
-template <class T = float>
-class EnvFollower : public AudioProcessor<T>
+template <concepts::numeric T = float>
+class EnvFollower
 {
 public:
     using sample_type = T;
@@ -26,8 +25,8 @@ public:
         RMS
     };
 
-    virtual void Init(EnvMode detect_mode, float attack_ms, float release_ms, float hold_ms,
-                      float sample_rate)
+    virtual void Init(EnvMode detect_mode, sample_type attack_ms, sample_type release_ms,
+                      sample_type hold_ms, sample_type sample_rate)
     {
         mode_ = detect_mode;
         fs_ = sample_rate;
@@ -41,11 +40,11 @@ public:
         index_ = 0;
     }
 
-    sample_type Process(sample_type sample) override
+    sample_type Process(sample_type sample)
     {
-        float mag;
+        sample_type mag;
         if(mode_ == EnvMode::RMS) {}
-        else { mag = std::fabs(sample); }
+        else { mag = gcem::fabs(sample); }
         if(mag > env_)
         {
             env_ = attack_ * (env_ - mag) + mag;
@@ -57,33 +56,35 @@ public:
         return env_;
     }
 
-    inline void SetAttack(float attack_ms) { attack_ = attack_ms; }
+    inline void SetAttack(sample_type attack_ms) { attack_ = attack_ms; }
 
-    inline void SetRelease(float release_ms) { release_ = release_ms; }
+    inline void SetRelease(sample_type release_ms) { release_ = release_ms; }
 
-    inline void SetHold(float hold_ms) { hold_ = hold_ms; }
+    inline void SetHold(sample_type hold_ms) { hold_ = hold_ms; }
 
     inline void SetDetectMode(EnvMode mode) { mode_ = mode; }
 
-    inline float GetAttack() { return attack_; }
-    inline float GetRelease() { return release_; }
-    inline float GetHold() { return hold_; }
+    inline sample_type GetAttack() const { return attack_; }
+    inline sample_type GetRelease() const { return release_; }
+    inline sample_type GetHold() const { return hold_; }
+
+    inline sample_type Value() const { return env_; }
 
 protected:
     std::vector<sample_type> buffer_;
-    float attack_;
-    float release_;
-    float env_;
-    float fs_;
-    float timer_;
-    float hold_;
+    sample_type attack_;
+    sample_type release_;
+    sample_type env_;
+    sample_type fs_;
+    sample_type timer_;
+    sample_type hold_;
     size_t index_;
     size_t rms_window_len_;
     EnvMode mode_;
 };
 
-template <class T = float>
-class Compressor : public EnvFollower<T>
+template <concepts::numeric T = float>
+class Compressor
 {
 public:
     using sample_type = T;
@@ -94,11 +95,18 @@ public:
         LIMIT
     };
 
-    void Init(float attack_ms, float release_ms, float hold_ms, float ratio, float knee,
-              float sample_rate, bool makeup = true)
+    enum class Topology
     {
-        EnvFollower<T>::Init(EnvFollower<T>::EnvMode::PEAK, attack_ms, release_ms, hold_ms,
-                             sample_rate);
+        FEEDBACK,
+        FEEDFORWARD
+    };
+
+    void Init(sample_type attack_ms, sample_type release_ms, sample_type hold_ms, sample_type ratio,
+              sample_type knee, sample_type sample_rate, bool makeup = true,
+              Topology topology = Topology::FEEDBACK)
+    {
+        env_follower_.Init(EnvFollower<sample_type>::EnvMode::PEAK, attack_ms, release_ms, hold_ms,
+                           sample_rate);
         comp_mode_ = CompMode::COMP;
         gain_reduction_ = 0;
         knee_ = knee;
@@ -106,30 +114,31 @@ public:
         threshold_ = 0.;
         makeup_ = makeup;
         gain_ = 0;
+        topology_ = topology;
         CalcKnee();
         CalcSlope();
     }
 
-    inline void SetAttack(float attack_ms)
+    inline void SetAttack(sample_type attack_ms)
     {
         this->attack_ = mbdsp::powf_approx(0.01, 1.0 / (attack_ms * this->fs_ * 0.001));
     }
 
-    inline void SetRelease(float release_ms)
+    inline void SetRelease(sample_type release_ms)
     {
         this->release_ = mbdsp::powf_approx(0.01, 1.0 / (release_ms * this->fs_ * 0.001));
     }
 
-    inline void SetHold(float hold_ms) { this->hold_ = hold_ms * this->fs_ * 0.001; }
+    inline void SetHold(sample_type hold_ms) { this->hold_ = hold_ms * this->fs_ * 0.001; }
 
-    inline void SetKnee(float knee)
+    inline void SetKnee(sample_type knee)
     {
         knee_ = knee;
         CalcKnee();
         CalcSlope();
     }
 
-    inline void SetRatio(float ratio)
+    inline void SetRatio(sample_type ratio)
     {
         ratio_ = ratio;
         CalcKnee();
@@ -137,7 +146,7 @@ public:
         CalcMakeup();
     }
 
-    inline void SetThreshold(float thresholdDB)
+    inline void SetThreshold(sample_type thresholdDB)
     {
         threshold_ = thresholdDB;
         CalcKnee();
@@ -151,60 +160,49 @@ public:
         CalcSlope();
     }
 
-    inline float GetThreshold() { return threshold_; }
+    inline sample_type GetThreshold() { return threshold_; }
 
-    inline float GetKnee() { return knee_; }
-    inline float GetRatio() { return ratio_; }
-    inline float GetGainReductionDb() { return gain_reduction_; }
+    inline sample_type GetKnee() { return knee_; }
+    inline sample_type GetRatio() { return ratio_; }
+    inline sample_type GetGainReductionDb() { return gain_reduction_; }
 
-    inline sample_type Process(sample_type sample) override
+    inline sample_type Process(sample_type sample)
     {
-        auto e = mbdsp::amp_to_db(EnvFollower<T>::Process(sample));
-        if(knee_width_ > 0.f && e > knee_lower_bound_ && e < knee_upper_bound_)
+        if(topology_ == Topology::FEEDFORWARD) { env_follower_.Process(sample); }
+
+        const auto env = amp_to_db(env_follower_.Value());
+
+        if(knee_width_ > 0.f && env > knee_lower_bound_ && env < knee_upper_bound_)
         {
-            slope_ *= ((e - knee_lower_bound_) / knee_width_) * 0.5;
-            gain_reduction_ = slope_ * (knee_lower_bound_ - e);
+            slope_ *= ((env - knee_lower_bound_) / knee_width_) * 0.5;
+            gain_reduction_ = slope_ * (knee_lower_bound_ - env);
         }
         else
         {
-            gain_reduction_ = slope_ * (threshold_ - e);
-            gain_reduction_ = std::min(0.f, gain_reduction_);
+            gain_reduction_ = slope_ * (threshold_ - env);
+            gain_reduction_ = gcem::min(0.f, gain_reduction_);
         }
 
-        return sample * mbdsp::db_to_amp(gain_reduction_ + gain_);
-    }
+        sample *= mbdsp::db_to_amp(gain_reduction_);
 
-    // Takes in two samples, processes them, and returns gain reduction in dB
-    inline sample_type ProcessStereo(sample_type sample1, sample_type sample2)
-    {
-        auto e = mbdsp::amp_to_db(EnvFollower<T>::Process(std::max(sample1, sample2)));
-        CalcSlope();
+        if(topology_ == Topology::FEEDBACK) { env_follower_.Process(sample); }
 
-        if(knee_width_ > 0. && e > knee_lower_bound_ && e < knee_upper_bound_)
-        {
-            slope_ *= ((e - knee_lower_bound_) / knee_width_) * 0.5;
-            gain_reduction_ = slope_ * (knee_lower_bound_ - e);
-        }
-        else
-        {
-            gain_reduction_ = slope_ * (threshold_ - e);
-            gain_reduction_ = std::min(0.f, gain_reduction_);
-        }
-
-        return gain_reduction_;
+        return sample * mbdsp::db_to_amp(gain_);
     }
 
 protected:
-    float gain_reduction_;
-    float knee_;
-    float ratio_;
-    float threshold_;
-    float knee_width_;
-    float knee_lower_bound_;
-    float knee_upper_bound_;
-    float slope_;
-    float gain_;
+    EnvFollower<sample_type> env_follower_;
+    sample_type gain_reduction_;
+    sample_type knee_;
+    sample_type ratio_;
+    sample_type threshold_;
+    sample_type knee_width_;
+    sample_type knee_lower_bound_;
+    sample_type knee_upper_bound_;
+    sample_type slope_;
+    sample_type gain_;
     CompMode comp_mode_;
+    Topology topology_;
     bool makeup_;
 
     inline void CalcKnee()
@@ -222,7 +220,7 @@ protected:
 
     inline void CalcMakeup()
     {
-        if(makeup_) { gain_ = std::fabs(threshold_ - threshold_ / ratio_) * 0.1; }
+        if(makeup_) { gain_ = gcem::fabs(threshold_ - threshold_ / ratio_) * 0.1; }
     }
 };
 
