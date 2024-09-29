@@ -43,6 +43,12 @@ constexpr T samples_to_ms(T samples, T sample_rate)
 }
 
 template <typename T>
+constexpr T ms_to_samples(T ms, T sample_rate)
+{
+    return ms * sample_rate * .001;
+}
+
+template <typename T>
 constexpr T samples_to_sec(T samples, T sample_rate)
 {
     return samples / sample_rate;
@@ -101,7 +107,7 @@ constexpr Float_t log10_approx(Float_t x)
 template <class Float_t>
 constexpr Float_t amp_to_db(Float_t amp)
 {
-    return log10_approx(amp) * static_cast<Float_t>(20);
+    return log10(amp) * static_cast<Float_t>(20);
 }
 
 template <class Float_t>
